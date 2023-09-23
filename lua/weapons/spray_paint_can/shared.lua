@@ -56,5 +56,5 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:SecondaryAttack()
-
+	concommand.Run(self:GetOwner(),"PaintManager")
 end
