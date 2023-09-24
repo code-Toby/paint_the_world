@@ -67,8 +67,9 @@ if CLIENT then
         local FinishButton = vgui.Create( "DButton", DFrame )
         FinishButton:SetPos(MainScrW/2.6,450)
         FinishButton:SetText("Finish")
-
-        --DFrame:Close()
+        FinishButton.DoClick = function()
+            DFrame:Close()
+        end
     end
 
     //--HUD STUFF START--\\

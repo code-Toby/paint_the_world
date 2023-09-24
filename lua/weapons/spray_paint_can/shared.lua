@@ -10,11 +10,12 @@ end
 if CLIENT then
     SWEP.PrintName			= "Spray paint"			
 	SWEP.Author				= "{Toby}"
+	SWEP.Instructions		= "Left click - Paint			Right click - Open Color Menu		Reload - clear your paint"
 	SWEP.Slot				= 0
 	SWEP.SlotPos			= 10
 
     SWEP.DrawAmmo = false
-    SWEP.DrawCrosshair = true
+    SWEP.DrawCrosshair = false
 end
 
 SWEP.Spawnable              = true
@@ -69,7 +70,7 @@ function PAINT(swep)
 	if MainPos:Distance(swep.LastPos) >= EntSize / 1.5 then
 		local currPaint = ents.Create("paint_spot")
 		currPaint:SetOwner(swep:GetOwner())
-		currPaint:SetPos(swep:GetOwner():GetEyeTrace().HitPos + swep:GetOwner():GetEyeTrace().HitNormal * EntLayer / 2.5)
+		currPaint:SetPos(swep:GetOwner():GetEyeTrace().HitPos + swep:GetOwner():GetEyeTrace().HitNormal * EntLayer / 2.8)
 		currPaint:SetAngles(swep:GetOwner():GetEyeTrace().HitNormal:Angle() + Angle(90,0,0))
 		currPaint:Spawn()
 
@@ -89,7 +90,6 @@ function SWEP:SecondaryAttack()
 	concommand.Run(self:GetOwner(),"PaintManager")
 end
 
-
 function SWEP:Reload()
 	for k, v in pairs(self.PaintSpots) do
 		if not IsValid(v) then return end
@@ -99,5 +99,36 @@ function SWEP:Reload()
 		if k == #self.PaintSpots then
 			self.PaintSpots = {}
 		end
+	end
+end
+
+function SWEP:Think()
+	if CLIENT then
+		
+		local EntSize = GetConVar("paint_manager_size"):GetFloat()
+		local EntColor = GetConVar("paint_manager_color"):GetString()
+		local EntLayer = GetConVar("paint_manager_layer"):GetInt()
+	
+		local ClrDecode = string.Explode(" ", EntColor)
+		local R = tonumber(ClrDecode[1])
+		local G = tonumber(ClrDecode[2])
+		local B = tonumber(ClrDecode[3])
+	
+		if self.CrossHair == nil then
+			self.CrossHair = ents.CreateClientside( "paint_spot" )
+			self.CrossHair:SetModel("models/hunter/tubes/tube1x1x1.mdl")
+			self.CrossHair:Spawn()
+		end
+		
+		self.CrossHair:SetScale( Vector(EntSize, EntSize, 0) )
+		self.CrossHair:SetColor(Color(R,G,B))
+		self.CrossHair:SetAngles(self:GetOwner():GetEyeTrace().HitNormal:Angle() + Angle(90,0,0))
+		self.CrossHair:SetPos(self:GetOwner():GetEyeTrace().HitPos + self:GetOwner():GetEyeTrace().HitNormal * EntLayer / 2.5)
+	end
+end
+
+function SWEP:Holster( wep )
+	if self.CrossHair != nil then
+		self.CrossHair:Remove()
 	end
 end
