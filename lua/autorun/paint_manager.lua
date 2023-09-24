@@ -12,6 +12,7 @@ if SERVER then
 end
 
 if CLIENT then
+
     local paint_color = CreateClientConVar("paint_manager_color", "255 255 255", false, false, "sets the color for the paint swep example: paint_manager_color <r> <g> <b>")
     local paint_size = CreateClientConVar("paint_manager_size", "1.5", false, false, "sets the radius of the paint swep example: paint_manager_size <number>")
     local paint_layer = CreateClientConVar("paint_manager_layer", "1", false, false, "sets the current working layer of the paint swep example: paint_manager_layer <number>")
@@ -47,7 +48,7 @@ if CLIENT then
         DermaNumSlider_size:SetPos( 10, 300 )				
         DermaNumSlider_size:SetSize( MainScrW, 70 )			
         DermaNumSlider_size:SetText( "Paint Size" )	
-        DermaNumSlider_size:SetMin( 0.5 )				 	
+        DermaNumSlider_size:SetMin( 0.1 )				 	
         DermaNumSlider_size:SetMax( 100 )				
         DermaNumSlider_size:SetDecimals( 1 )				
         DermaNumSlider_size:SetValue( paint_size:GetFloat() )

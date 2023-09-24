@@ -36,7 +36,7 @@ SWEP.ViewModelBoneMods = {
 
 SWEP.Primary.ClipSize       = -1
 SWEP.Primary.DefaultClip    = -1
-SWEP.Primary.Automatic      = false
+SWEP.Primary.Automatic      = true
 SWEP.Primary.Ammo           = "none"
  
 SWEP.Secondary.ClipSize     = -1
@@ -51,10 +51,53 @@ SWEP.VElements = {
 	["spray_can"] = { type = "Model", model = "models/paint_the_world/Spray_paint_can.mdl", bone = "ValveBiped.Grenade_body", rel = "", pos = Vector(-3.636, 0, 0), angle = Angle(0, 24.545, 180), size = Vector(0.95, 0.95, 0.95), color = Color(255, 255, 255, 255), surpresslightning = false, material = "PAINT_THE_WORLD/spray_can", skin = 0, bodygroup = {} }
 }
 
-function SWEP:PrimaryAttack()
+SWEP.PaintSpots = {}
+SWEP.LastPos = Vector(0,0,0)
 
+function PAINT(swep)
+	local EntSize = GetConVar("paint_manager_size"):GetFloat()
+    local EntColor = GetConVar("paint_manager_color"):GetString()
+    local EntLayer = GetConVar("paint_manager_layer"):GetInt()
+
+	local ClrDecode = string.Explode(" ", EntColor)
+	local R = tonumber(ClrDecode[1])
+	local G = tonumber(ClrDecode[2])
+	local B = tonumber(ClrDecode[3])
+	
+	local MainPos = swep:GetOwner():GetEyeTrace().HitPos + swep:GetOwner():GetEyeTrace().HitNormal * EntLayer * 1.2
+
+	if MainPos:Distance(swep.LastPos) >= EntSize / 1.5 then
+		local currPaint = ents.Create("paint_spot")
+		currPaint:SetOwner(swep:GetOwner())
+		currPaint:SetPos(swep:GetOwner():GetEyeTrace().HitPos + swep:GetOwner():GetEyeTrace().HitNormal * EntLayer / 2.5)
+		currPaint:SetAngles(swep:GetOwner():GetEyeTrace().HitNormal:Angle() + Angle(90,0,0))
+		currPaint:Spawn()
+
+		currPaint:SetScale( Vector(EntSize, EntSize, 0) )
+		currPaint:SetColor(Color(R,G,B))
+
+		table.insert(swep.PaintSpots, currPaint)
+	end
+	swep.LastPos = MainPos
+end
+
+function SWEP:PrimaryAttack()
+	PAINT(self)
 end
 
 function SWEP:SecondaryAttack()
 	concommand.Run(self:GetOwner(),"PaintManager")
+end
+
+
+function SWEP:Reload()
+	for k, v in pairs(self.PaintSpots) do
+		if not IsValid(v) then return end
+		print(v)
+		v:Remove()
+
+		if k == #self.PaintSpots then
+			self.PaintSpots = {}
+		end
+	end
 end
