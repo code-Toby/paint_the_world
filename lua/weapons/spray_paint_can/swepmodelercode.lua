@@ -63,7 +63,7 @@ function SWEP:Holster()
 			self:ResetBonePositions(vm)
 		end
 	end
-	
+	self.ONHOLDSTER(self)
 	return true
 end
 

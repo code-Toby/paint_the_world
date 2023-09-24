@@ -14,5 +14,5 @@ function ENT:Draw(flags)
 
     render.SuppressEngineLighting( true )
     self:DrawModel()
-    
+    render.SuppressEngineLighting( false )
 end

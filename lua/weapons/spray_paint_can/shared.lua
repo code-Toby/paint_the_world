@@ -27,7 +27,7 @@ SWEP.ViewModelFlip = false
 SWEP.UseHands = false
 SWEP.ViewModel = "models/weapons/v_grenade.mdl"
 SWEP.WorldModel = "models/weapons/w_pistol.mdl"
-SWEP.ShowViewModel = true
+SWEP.ShowViewModel = false
 SWEP.ShowWorldModel = false
 SWEP.ViewModelBoneMods = {
 	["ValveBiped.Grenade_body"] = { scale = Vector(3, 3, 3), pos = Vector(0, 0, 0), angle = Angle(0, 0, 0) },
@@ -54,6 +54,12 @@ SWEP.VElements = {
 
 SWEP.PaintSpots = {}
 SWEP.LastPos = Vector(0,0,0)
+SWEP.ONHOLDSTER = function(self)
+	if self.CrossHair != nil then
+		self.CrossHair:SetScale(Vector(0,0,0))
+	end
+end
+
 
 function PAINT(swep)
 	local EntSize = GetConVar("paint_manager_size"):GetFloat()
@@ -67,7 +73,7 @@ function PAINT(swep)
 	
 	local MainPos = swep:GetOwner():GetEyeTrace().HitPos + swep:GetOwner():GetEyeTrace().HitNormal * EntLayer * 1.2
 
-	if MainPos:Distance(swep.LastPos) >= EntSize / 1.5 then
+	if MainPos:Distance(swep.LastPos) >= EntSize / 2.5 then
 		local currPaint = ents.Create("paint_spot")
 		currPaint:SetOwner(swep:GetOwner())
 		currPaint:SetPos(swep:GetOwner():GetEyeTrace().HitPos + swep:GetOwner():GetEyeTrace().HitNormal * EntLayer / 2.8)
@@ -104,7 +110,6 @@ end
 
 function SWEP:Think()
 	if CLIENT then
-		
 		local EntSize = GetConVar("paint_manager_size"):GetFloat()
 		local EntColor = GetConVar("paint_manager_color"):GetString()
 		local EntLayer = GetConVar("paint_manager_layer"):GetInt()
@@ -118,16 +123,27 @@ function SWEP:Think()
 			self.CrossHair = ents.CreateClientside( "paint_spot" )
 			self.CrossHair:SetModel("models/hunter/tubes/tube1x1x1.mdl")
 			self.CrossHair:Spawn()
+		else
+			self.CrossHair:SetScale( Vector(EntSize, EntSize, 0) )
+			self.CrossHair:SetColor(Color(R,G,B))
+			self.CrossHair:SetAngles(self:GetOwner():GetEyeTrace().HitNormal:Angle() + Angle(90,0,0))
+			self.CrossHair:SetPos(self:GetOwner():GetEyeTrace().HitPos + self:GetOwner():GetEyeTrace().HitNormal * EntLayer / 2.5)
 		end
-		
-		self.CrossHair:SetScale( Vector(EntSize, EntSize, 0) )
-		self.CrossHair:SetColor(Color(R,G,B))
-		self.CrossHair:SetAngles(self:GetOwner():GetEyeTrace().HitNormal:Angle() + Angle(90,0,0))
-		self.CrossHair:SetPos(self:GetOwner():GetEyeTrace().HitPos + self:GetOwner():GetEyeTrace().HitNormal * EntLayer / 2.5)
+
 	end
 end
 
-function SWEP:Holster( wep )
+function SWEP:OnRemove()
+	for k, v in pairs(self.PaintSpots) do
+		if not IsValid(v) then return end
+		print(v)
+		v:Remove()
+
+		if k == #self.PaintSpots then
+			self.PaintSpots = {}
+		end
+	end
+
 	if self.CrossHair != nil then
 		self.CrossHair:Remove()
 	end
