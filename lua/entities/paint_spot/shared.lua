@@ -6,7 +6,7 @@ ENT.Base            = "base_anim"
 ENT.PrintName       = "paint spot"
 ENT.Author          = "{Toby}"
 
-ENT.Spawnable       = true
+ENT.Spawnable       = false
 ENT.AdminSpawnable  = false
 
 function ENT:SetupDataTables()
