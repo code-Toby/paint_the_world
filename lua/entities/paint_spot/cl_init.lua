@@ -1,7 +1,7 @@
 include("shared.lua")
 
 function ENT:Initialize()
-
+    
 end
 
 function ENT:Draw(flags)
@@ -12,7 +12,7 @@ function ENT:Draw(flags)
     matrix:Scale(self:GetScale())
     self:EnableMatrix("RenderMultiply", matrix)
 
-    render.SuppressEngineLighting( true )
+    render.SuppressEngineLighting(true)
     self:DrawModel()
-    render.SuppressEngineLighting( false )
+    render.SuppressEngineLighting(false)
 end

@@ -56,62 +56,84 @@ function SWEP:Initialize()
 end
 
 function SWEP:Holster()
-	
-	if CLIENT and IsValid(self.Owner) then
-		local vm = self.Owner:GetViewModel()
-		if IsValid(vm) then
-			self:ResetBonePositions(vm)
-		end
-	end
-	self.ONHOLDSTER(self)
-	return true
+    if CLIENT and IsValid(self.Owner) then
+        local vm = self.Owner:GetViewModel()
+        if IsValid(vm) then
+            self:ResetBonePositions(vm)
+        end
+    end
+
+    if SERVER and IsValid(self.Owner) then
+        local newWeapon = self.Owner:GetActiveWeapon()
+        if IsValid(newWeapon) and newWeapon != self then
+            self.Owner:SelectWeapon(newWeapon:GetClass())
+        end
+    end
+
+    self.ONHOLDSTER(self)
+    return true
 end
 
 function SWEP:OnRemove()
-	self:Holster()
+    local owner = self:GetOwner()
+
+    if IsValid(owner) then
+        local otherWeapon = owner:GetActiveWeapon()
+        if IsValid(otherWeapon) and otherWeapon ~= self then
+            owner:SelectWeapon(otherWeapon:GetClass())
+        end
+    end
+
+    self:Holster()
+    self:RemoveModels(self.VElements)
+    self:RemoveModels(self.WElements)
 end
 
+
 if CLIENT then
+    SWEP.vRenderOrder = nil
 
-	SWEP.vRenderOrder = nil
-	function SWEP:ViewModelDrawn()
-		
-		local vm = self.Owner:GetViewModel()
-		if !IsValid(vm) then return end
-		
-		if (!self.VElements) then return end
-		
-		self:UpdateBonePositions(vm)
+    function SWEP:ViewModelDrawn()
+        local vm = self.Owner:GetViewModel()
+        if not IsValid(vm) then return end
 
-		if (!self.vRenderOrder) then
-			
-			// we build a render order because sprites need to be drawn after models
-			self.vRenderOrder = {}
+        if not self.VElements then return end
 
-			for k, v in pairs( self.VElements ) do
-				if (v.type == "Model") then
-					table.insert(self.vRenderOrder, 1, k)
-				elseif (v.type == "Sprite" or v.type == "Quad") then
-					table.insert(self.vRenderOrder, k)
-				end
-			end
-			
-		end
+        self:UpdateBonePositions(vm)
 
-		for k, name in ipairs( self.vRenderOrder ) do
-		
-			local v = self.VElements[name]
-			if (!v) then self.vRenderOrder = nil break end
-			if (v.hide) then continue end
-			
-			local model = v.modelEnt
-			local sprite = v.spriteMaterial
-			
-			if (!v.bone) then continue end
-			
-			local pos, ang = self:GetBoneOrientation( self.VElements, v, vm )
-			
-			if (!pos) then continue end
+        if not self.vRenderOrder then
+            self.vRenderOrder = {}
+            for k, v in pairs(self.VElements) do
+                if v.type == "Model" then
+                    table.insert(self.vRenderOrder, 1, k)
+                elseif v.type == "Sprite" or v.type == "Quad" then
+                    table.insert(self.vRenderOrder, k)
+                end
+            end
+        end
+
+        for _, name in ipairs(self.vRenderOrder) do
+            local v = self.VElements[name]
+            if not v then
+                self.vRenderOrder = nil
+                break
+            end
+            if v.hide then
+                continue
+            end
+
+            local model = v.modelEnt
+            local sprite = v.spriteMaterial
+
+            if not v.bone then
+                continue
+            end
+
+            local pos, ang = self:GetBoneOrientation(self.VElements, v, vm)
+
+            if not pos then
+                continue
+            end
 			
 			if (v.type == "Model" and IsValid(model)) then
 
@@ -181,54 +203,52 @@ if CLIENT then
 		
 	end
 
-	SWEP.wRenderOrder = nil
-	function SWEP:DrawWorldModel()
-		
-		if (self.ShowWorldModel == nil or self.ShowWorldModel) then
-			self:DrawModel()
-		end
-		
-		if (!self.WElements) then return end
-		
-		if (!self.wRenderOrder) then
+    SWEP.wRenderOrder = nil
 
-			self.wRenderOrder = {}
+    function SWEP:DrawWorldModel()
+        if self.ShowWorldModel == nil or self.ShowWorldModel then
+            self:DrawModel()
+        end
 
-			for k, v in pairs( self.WElements ) do
-				if (v.type == "Model") then
-					table.insert(self.wRenderOrder, 1, k)
-				elseif (v.type == "Sprite" or v.type == "Quad") then
-					table.insert(self.wRenderOrder, k)
-				end
-			end
+        if not self.WElements then return end
 
-		end
-		
-		if (IsValid(self.Owner)) then
-			bone_ent = self.Owner
-		else
-			// when the weapon is dropped
-			bone_ent = self
-		end
-		
-		for k, name in pairs( self.wRenderOrder ) do
-		
-			local v = self.WElements[name]
-			if (!v) then self.wRenderOrder = nil break end
-			if (v.hide) then continue end
-			
-			local pos, ang
-			
-			if (v.bone) then
-				pos, ang = self:GetBoneOrientation( self.WElements, v, bone_ent )
-			else
-				pos, ang = self:GetBoneOrientation( self.WElements, v, bone_ent, "ValveBiped.Bip01_R_Hand" )
-			end
-			
-			if (!pos) then continue end
-			
-			local model = v.modelEnt
-			local sprite = v.spriteMaterial
+        if not self.wRenderOrder then
+            self.wRenderOrder = {}
+            for k, v in pairs(self.WElements) do
+                if v.type == "Model" then
+                    table.insert(self.wRenderOrder, 1, k)
+                elseif v.type == "Sprite" or v.type == "Quad" then
+                    table.insert(self.wRenderOrder, k)
+                end
+            end
+        end
+
+        local bone_ent = IsValid(self.Owner) and self.Owner or self
+
+        for _, name in pairs(self.wRenderOrder) do
+            local v = self.WElements[name]
+            if not v then
+                self.wRenderOrder = nil
+                break
+            end
+            if v.hide then
+                continue
+            end
+
+            local pos, ang
+
+            if v.bone then
+                pos, ang = self:GetBoneOrientation(self.WElements, v, bone_ent)
+            else
+                pos, ang = self:GetBoneOrientation(self.WElements, v, bone_ent, "ValveBiped.Bip01_R_Hand")
+            end
+
+            if not pos then
+                continue
+            end
+
+            local model = v.modelEnt
+            local sprite = v.spriteMaterial
 			
 			if (v.type == "Model" and IsValid(model)) then
 
